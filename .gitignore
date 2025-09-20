@@ -1,0 +1,5 @@
+node_modules/
+.env
+*.log
+*.json # nếu muốn bỏ các file dữ liệu như input.json
+.DS_Store
