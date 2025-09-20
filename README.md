@@ -1,4 +1,4 @@
-VERTEX AI SEARCH SERVER
+SERVER VERTEX AI SEARCH 
 
 1. Install dependencies: npm install
 2. Create .env file: GCP_KEY_FILE=your_name_json_key_file
