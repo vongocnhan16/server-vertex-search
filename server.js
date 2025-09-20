@@ -13,6 +13,7 @@ const app = express();
 app.use(express.json());
 
 // ===== GCP Config =====
+// Change these values to your own
 const PROJECT_ID = "gcp-steve-123";
 const LOCATION = "global";
 const BUCKET = "vertex-ai-search-bucket-123";
@@ -84,7 +85,7 @@ async function importData(token, datastoreId, gcsPath) {
   console.log(`[DEBUG] Data imported to datastore ${datastoreId}`);
 }
 
-// ===== Main: process file gốc =====
+// ===== Main: process the meta file =====
 const userDatastores = {}; // { userPhone: { datastoreId, searchAppId } }
 const DATA_FOLDER = path.join(process.cwd(), "data");
 if (!fs.existsSync(DATA_FOLDER)) fs.mkdirSync(DATA_FOLDER, { recursive: true });
@@ -92,7 +93,7 @@ if (!fs.existsSync(DATA_FOLDER)) fs.mkdirSync(DATA_FOLDER, { recursive: true });
 async function processInputFile(inputFile) {
   const rawData = JSON.parse(fs.readFileSync(inputFile, "utf-8"));
 
-  // Nhóm theo userPhone
+  // Group messages by userPhone
   const userGroups = {};
   for (const row of rawData) {
     if (!userGroups[row.userPhone]) userGroups[row.userPhone] = [];
@@ -110,7 +111,7 @@ async function processInputFile(inputFile) {
 
     userDatastores[userPhone] = { datastoreId, searchAppId };
 
-    // Tạo JSONL cho user
+    // Create JSONL file for the user
     const userFilePath = path.join(os.tmpdir(), `${userPhone}-messages.jsonl`);
     const jsonlContent = userGroups[userPhone]
       .map(m => JSON.stringify({ id: m.timestamp.replace(/[^a-zA-Z0-9_-]/g,"_"), content: m.message, structData: m }))
@@ -120,14 +121,13 @@ async function processInputFile(inputFile) {
     // Upload bucket
     const gcsPath = await uploadFileToGCS(userFilePath, "messages.jsonl", userPhone);
 
-    // Import vào Datastore
+    // Import into Datastore
     await importData(token, datastoreId, gcsPath);
 
     fs.unlinkSync(userFilePath);
   }
 }
 
-// ===== API test =====
 app.post("/api/process", async (req, res) => {
   try {
     await processInputFile(path.join(DATA_FOLDER, "input.json"));
@@ -138,7 +138,6 @@ app.post("/api/process", async (req, res) => {
   }
 });
 
-// ===== Start server =====
 app.listen(3002, async () => {
   console.log("[DEBUG] Server running at http://localhost:3002");
 });
