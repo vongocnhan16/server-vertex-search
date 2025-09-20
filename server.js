@@ -130,7 +130,7 @@ async function processInputFile(inputFile) {
 
 app.post("/api/process", async (req, res) => {
   try {
-    await processInputFile(path.join(DATA_FOLDER, "input.json"));
+    await processInputFile(path.join(DATA_FOLDER, "input.json"));  //Change file name matching the file in data folder
     res.json({ success: true, message: "Processed all users!" });
   } catch (err) {
     console.error(err);
