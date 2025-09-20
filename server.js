@@ -138,6 +138,45 @@ app.post("/api/process", async (req, res) => {
   }
 });
 
+app.post("/api/search", async (req, res) => {
+  try {
+    const { userPhone, query } = req.body;
+
+    if (!userPhone || !query) {
+      return res.status(400).json({ error: "Missing userPhone or query" });
+    }
+
+    const userData = userDatastores[userPhone];
+    if (!userData) {
+      return res.status(404).json({ error: "No datastore found for this userPhone" });
+    }
+
+    const token = await getToken();
+
+    // Call Vertex AI Search
+    const searchUrl = `https://discoveryengine.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/collections/default_collection/engines/${userData.searchAppId}:search`;
+    const searchRes = await fetch(searchUrl, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: query,
+        pageSize: 10
+      }),
+    });
+
+    if (!searchRes.ok) {
+      throw new Error(await searchRes.text());
+    }
+
+    const searchResult = await searchRes.json();
+    res.json({ results: searchResult.results || [] });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(3002, async () => {
   console.log("[DEBUG] Server running at http://localhost:3002");
 });
